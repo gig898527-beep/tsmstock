@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSM Stock - Dark Gold Edition</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        dark: {
+                            950: '#0a0a0a', // Main Background
+                            900: '#171717', // Sidebar/Cards
+                            800: '#262626', // Borders
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b', // Primary Brand Color
+                            600: '#d97706', // Hover State
+                            900: '#78350f'  // Deep Backgrounds
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Mobile Overlay */
+        #mobile-overlay {
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="bg-dark-950 text-neutral-200 font-sans h-screen flex overflow-hidden selection:bg-gold-500 selection:text-black">
+
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden transition-opacity opacity-0"></div>
+
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-64 bg-dark-900 border-r border-dark-800 flex flex-col shrink-0 transition-transform duration-300 transform -translate-x-full lg:translate-x-0 z-30">
+        <div class="p-6 border-b border-dark-800 flex items-center gap-3">
+            <div class="w-10 h-10 bg-gold-500 text-black rounded-lg flex items-center justify-center font-bold text-xl shadow-lg shadow-gold-500/20">
+                TSM
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight text-white">TSM Stock</h1>
+                <p class="text-xs text-neutral-500">Dark Gold Edition</p>
+            </div>
+            <button onclick="toggleSidebar()" class="lg:hidden ml-auto text-neutral-400 hover:text-white">
+                <i data-lucide="x" width="24"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar">
+            <button onclick="switchTab('dashboard')" class="nav-item active flex items-center w-full space-x-3 px-4 py-3 rounded-lg transition-all duration-200 bg-gold-500 text-black font-bold shadow-lg shadow-gold-500/20">
+                <i data-lucide="layout-dashboard" width="20"></i> <span>Dashboard</span>
+            </button>
+            <button onclick="switchTab('inventory')" class="nav-item flex items-center w-full space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-neutral-400 hover:bg-dark-800 hover:text-gold-400">
+                <i data-lucide="package" width="20"></i> <span class="font-medium">Inventory</span>
+            </button>
+            <button onclick="switchTab('pos')" class="nav-item flex items-center w-full space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-neutral-400 hover:bg-dark-800 hover:text-gold-400">
+                <i data-lucide="shopping-cart" width="20"></i> <span class="font-medium">Point of Sale</span>
+            </button>
+            <button onclick="switchTab('debt')" class="nav-item flex items-center w-full space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-neutral-400 hover:bg-dark-800 hover:text-gold-400">
+                <i data-lucide="users" width="20"></i> <span class="font-medium">Debtors</span>
+            </button>
+            
+            <div class="pt-6 pb-2">
+                <p class="px-4 text-xs font-semibold text-neutral-600 uppercase tracking-wider">System</p>
+            </div>
+            
+            <button onclick="switchTab('settings')" class="nav-item flex items-center w-full space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-neutral-400 hover:bg-dark-800 hover:text-gold-400">
+                <i data-lucide="settings" width="20"></i> <span class="font-medium">Settings</span>
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-dark-800">
+            <button class="flex items-center space-x-3 text-neutral-400 hover:text-red-500 w-full px-4 py-2 transition-colors">
+                <i data-lucide="log-out" width="20"></i> <span>Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-dark-950">
+        
+        <header class="h-16 bg-dark-900 border-b border-dark-800 flex items-center justify-between px-4 lg:px-8 shrink-0 z-10">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden text-neutral-400 hover:text-white">
+                    <i data-lucide="menu" width="24"></i>
+                </button>
+                <h2 class="text-xl font-bold text-white capitalize truncate" id="page-title">Dashboard</h2>
+            </div>
+            
+            <div class="flex items-center gap-4 lg:gap-6">
+                <div class="relative cursor-pointer hover:bg-dark-800 p-2 rounded-full transition-colors">
+                    <i data-lucide="bell" class="text-neutral-400 hover:text-gold-400" width="20"></i>
+                    <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-dark-900"></span>
+                </div>
+                
+                <div class="flex items-center gap-3 pl-4 lg:pl-6 border-l border-dark-800">
+                    <div class="text-right hidden md:block">
+                        <p class="text-sm font-bold text-white">Admin User</p>
+                        <p class="text-xs text-neutral-500">Super Admin</p>
+                    </div>
+                    <div class="w-10 h-10 bg-dark-800 rounded-full flex items-center justify-center text-gold-500 font-bold border border-dark-700">
+                        AD
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-auto p-4 lg:p-8 scroll-smooth" id="content-area">
+            
+            <div id="view-dashboard" class="view-section fade-in">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+                    <div class="bg-dark-900 p-6 rounded-xl border border-dark-800 hover:border-gold-500/50 transition-colors">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-neutral-500 mb-1">Today's Sales</p>
+                                <h3 class="text-2xl font-bold text-white">$1,240.50</h3>
+                            </div>
+                            <div class="p-3 rounded-lg bg-gold-500/10 text-gold-500">
+                                <i data-lucide="banknote" width="24"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center text-sm">
+                            <span class="text-green-500 font-medium flex items-center gap-1">
+                                <i data-lucide="trending-up" width="14"></i> +12.5%
+                            </span>
+                            <span class="text-neutral-500 ml-2">vs yesterday</span>
+                        </div>
+                    </div>
+                    <div class="bg-dark-900 p-6 rounded-xl border border-dark-800 hover:border-gold-500/50 transition-colors">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-neutral-500 mb-1">Total Products</p>
+                                <h3 class="text-2xl font-bold text-white">1,432</h3>
+                            </div>
+                            <div class="p-3 rounded-lg bg-emerald-500/10 text-emerald-500">
+                                <i data-lucide="package" width="24"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center text-sm">
+                            <span class="text-emerald-500 font-medium flex items-center gap-1">
+                                <i data-lucide="plus" width="14"></i> +4 New
+                            </span>
+                        </div>
+                    </div>
+                    <div class="bg-dark-900 p-6 rounded-xl border border-dark-800 hover:border-gold-500/50 transition-colors">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-neutral-500 mb-1">Low Stock</p>
+                                <h3 class="text-2xl font-bold text-white">5 Items</h3>
+                            </div>
+                            <div class="p-3 rounded-lg bg-red-500/10 text-red-500">
+                                <i data-lucide="alert-triangle" width="24"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center text-sm">
+                            <span class="text-red-500 font-medium">Action Needed</span>
+                        </div>
+                    </div>
+                    <div class="bg-dark-900 p-6 rounded-xl border border-dark-800 hover:border-gold-500/50 transition-colors">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-neutral-500 mb-1">Total Debt</p>
+                                <h3 class="text-2xl font-bold text-white">$570.00</h3>
+                            </div>
+                            <div class="p-3 rounded-lg bg-purple-500/10 text-purple-500">
+                                <i data-lucide="users" width="24"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center text-sm">
+                            <span class="text-neutral-500">Needs Collection</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-dark-900 p-6 rounded-xl border border-dark-800">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                            <h3 class="text-lg font-bold text-white">Sales Overview</h3>
+                            <select class="text-sm border border-dark-800 bg-dark-950 rounded-lg px-3 py-1.5 text-neutral-300 focus:ring-1 focus:ring-gold-500 outline-none cursor-pointer">
+                                <option>Last 7 Days</option>
+                                <option>Last Month</option>
+                            </select>
+                        </div>
+                        <div class="relative h-64 lg:h-72 w-full">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-dark-900 p-6 rounded-xl border border-dark-800">
+                        <h3 class="text-lg font-bold text-white mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            <button class="w-full py-3 px-4 bg-dark-800 text-neutral-300 rounded-lg font-medium hover:bg-gold-500 hover:text-black flex items-center justify-between group transition-all">
+                                <span class="flex items-center gap-2"><i data-lucide="upload" width="16"></i> Import Stock</span>
+                                <i data-lucide="chevron-right" width="16" class="text-neutral-500 group-hover:text-black transition-transform"></i>
+                            </button>
+                            <button class="w-full py-3 px-4 bg-dark-800 text-neutral-300 rounded-lg font-medium hover:bg-gold-500 hover:text-black flex items-center justify-between group transition-all">
+                                <span class="flex items-center gap-2"><i data-lucide="warehouse" width="16"></i> New Warehouse</span>
+                                <i data-lucide="chevron-right" width="16" class="text-neutral-500 group-hover:text-black transition-transform"></i>
+                            </button>
+                            <button class="w-full py-3 px-4 bg-dark-800 text-neutral-300 rounded-lg font-medium hover:bg-gold-500 hover:text-black flex items-center justify-between group transition-all">
+                                <span class="flex items-center gap-2"><i data-lucide="download" width="16"></i> Download Report</span>
+                                <i data-lucide="chevron-right" width="16" class="text-neutral-500 group-hover:text-black transition-transform"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-inventory" class="view-section hidden fade-in h-full flex flex-col">
+                <div class="bg-dark-900 rounded-xl border border-dark-800 flex flex-col h-full overflow-hidden">
+                    <div class="p-6 border-b border-dark-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+                        <h2 class="text-lg font-bold text-white">All Products</h2>
+                        <button class="bg-gold-500 text-black px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gold-400 font-bold transition-all w-full sm:w-auto justify-center">
+                            <i data-lucide="plus" width="18"></i> Add Product
+                        </button>
+                    </div>
+                    
+                    <div class="p-4 border-b border-dark-800 bg-dark-950/50 flex flex-col sm:flex-row gap-4 shrink-0">
+                        <div class="relative flex-1">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" width="20"></i>
+                            <input type="text" placeholder="Search product..." class="w-full pl-10 pr-4 py-2.5 bg-dark-950 border border-dark-800 rounded-lg text-white focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all placeholder-neutral-600">
+                        </div>
+                        <button class="px-4 py-2 bg-dark-950 border border-dark-800 rounded-lg flex items-center justify-center gap-2 text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors">
+                            <i data-lucide="filter" width="18"></i> Filters
+                        </button>
+                    </div>
+
+                    <div class="flex-1 overflow-auto">
+                        <table class="w-full text-left border-collapse min-w-[800px]">
+                            <thead class="bg-dark-950 sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-6 py-4 font-semibold text-neutral-400 text-sm">ID</th>
+                                    <th class="px-6 py-4 font-semibold text-neutral-400 text-sm">Name</th>
+                                    <th class="px-6 py-4 font-semibold text-neutral-400 text-sm">Category</th>
+                                    <th class="px-6 py-4 font-semibold text-neutral-400 text-sm">Price</th>
+                                    <th class="px-6 py-4 font-semibold text-neutral-400 text-sm">Stock</th>
+                                    <th class="px-6 py-4 font-semibold text-neutral-400 text-sm text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-dark-800 bg-dark-900">
+                                <tr class="hover:bg-dark-800 transition-colors group">
+                                    <td class="px-6 py-4 text-neutral-500 font-mono text-sm">TSM001</td>
+                                    <td class="px-6 py-4 font-medium text-white">Coca Cola Case</td>
+                                    <td class="px-6 py-4"><span class="px-2.5 py-1 bg-dark-800 text-neutral-300 rounded-full text-xs font-medium border border-dark-700">Beverage</span></td>
+                                    <td class="px-6 py-4 font-bold text-gold-500">$12.50</td>
+                                    <td class="px-6 py-4"><span class="px-2.5 py-1 bg-green-500/10 text-green-500 rounded-full text-xs font-medium border border-green-500/20">45 Units</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-neutral-500 hover:text-gold-500"><i data-lucide="edit-3" width="18"></i></button></td>
+                                </tr>
+                                <tr class="hover:bg-dark-800 transition-colors group">
+                                    <td class="px-6 py-4 text-neutral-500 font-mono text-sm">TSM002</td>
+                                    <td class="px-6 py-4 font-medium text-white">Angkor Beer</td>
+                                    <td class="px-6 py-4"><span class="px-2.5 py-1 bg-dark-800 text-neutral-300 rounded-full text-xs font-medium border border-dark-700">Alcohol</span></td>
+                                    <td class="px-6 py-4 font-bold text-gold-500">$14.00</td>
+                                    <td class="px-6 py-4"><span class="px-2.5 py-1 bg-red-500/10 text-red-500 rounded-full text-xs font-medium border border-red-500/20">4 Units</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-neutral-500 hover:text-gold-500"><i data-lucide="edit-3" width="18"></i></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-pos" class="view-section hidden fade-in lg:h-[calc(100vh-140px)]">
+                <div class="flex flex-col lg:flex-row h-full gap-4 lg:gap-6">
+                    <div class="flex-1 bg-dark-900 rounded-xl border border-dark-800 p-4 lg:p-6 flex flex-col overflow-hidden min-h-[500px] lg:min-h-0">
+                        <div class="mb-4 lg:mb-6 flex gap-4 shrink-0">
+                            <div class="relative flex-1">
+                                <i data-lucide="scan-barcode" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" width="20"></i>
+                                <input type="text" placeholder="Search item..." class="w-full pl-10 pr-4 py-3 bg-dark-950 border border-dark-800 rounded-xl text-white focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all placeholder-neutral-600">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4 overflow-y-auto pr-2 pb-2">
+                            <div onclick="addToCart('Coca Cola Case', 12.50)" class="group p-4 border border-dark-800 rounded-xl hover:border-gold-500 cursor-pointer transition-all bg-dark-950 flex flex-col justify-between h-36 lg:h-40 relative overflow-hidden">
+                                <div class="absolute top-0 left-0 w-1 h-full bg-gold-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <div>
+                                    <h4 class="font-bold text-white line-clamp-2 group-hover:text-gold-500 transition-colors">Coca Cola Case</h4>
+                                    <p class="text-xs text-neutral-500 mt-1 font-mono">TSM001</p>
+                                </div>
+                                <div class="flex justify-between items-end mt-2">
+                                    <span class="font-bold text-gold-500 text-lg">$12.50</span>
+                                    <span class="text-xs bg-dark-800 text-neutral-400 px-2 py-1 rounded">45 Left</span>
+                                </div>
+                            </div>
+                            <div onclick="addToCart('Angkor Beer', 14.00)" class="group p-4 border border-dark-800 rounded-xl hover:border-gold-500 cursor-pointer transition-all bg-dark-950 flex flex-col justify-between h-36 lg:h-40 relative overflow-hidden">
+                                <div class="absolute top-0 left-0 w-1 h-full bg-gold-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <div>
+                                    <h4 class="font-bold text-white line-clamp-2 group-hover:text-gold-500 transition-colors">Angkor Beer</h4>
+                                    <p class="text-xs text-neutral-500 mt-1 font-mono">TSM002</p>
+                                </div>
+                                <div class="flex justify-between items-end mt-2">
+                                    <span class="font-bold text-gold-500 text-lg">$14.00</span>
+                                    <span class="text-xs bg-dark-800 text-neutral-400 px-2 py-1 rounded">4 Left</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-full lg:w-96 bg-dark-900 rounded-xl border border-dark-800 flex flex-col shrink-0 h-96 lg:h-auto">
+                        <div class="p-5 border-b border-dark-800 flex justify-between items-center">
+                            <h2 class="font-bold text-lg text-white flex items-center gap-2">
+                                <i data-lucide="shopping-cart" width="20"></i> Order
+                            </h2>
+                            <span class="bg-gold-500 text-black text-xs font-bold px-2 py-1 rounded-full" id="cart-count">0</span>
+                        </div>
+
+                        <div class="flex-1 overflow-auto p-4 space-y-3" id="cart-items">
+                            <div id="empty-cart-msg" class="h-full flex flex-col items-center justify-center text-neutral-600">
+                                <i data-lucide="package-open" width="48" class="mb-2 opacity-20"></i>
+                                <p class="text-sm">Cart is empty</p>
+                            </div>
+                        </div>
+
+                        <div class="p-5 bg-dark-950 border-t border-dark-800 rounded-b-xl">
+                            <div class="flex justify-between mb-2 text-sm">
+                                <span class="text-neutral-400">Total</span>
+                                <span class="font-bold text-gold-500 text-xl" id="cart-total">$0.00</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 mt-4">
+                                <button class="py-3 rounded-lg bg-green-600 text-white font-bold hover:bg-green-500 transition-colors flex justify-center gap-2">
+                                    <i data-lucide="banknote" width="20"></i> Cash
+                                </button>
+                                <button class="py-3 rounded-lg bg-dark-800 text-white font-bold hover:bg-dark-700 transition-colors border border-dark-700 flex justify-center gap-2">
+                                    <i data-lucide="credit-card" width="20"></i> Debt
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-debt" class="view-section hidden fade-in">
+                <div class="bg-dark-900 rounded-xl border border-dark-800 p-6">
+                    <h2 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <div class="p-2 bg-purple-500/20 text-purple-400 rounded-lg"><i data-lucide="book" width="20"></i></div>
+                        Debtors List
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="flex justify-between items-center p-5 bg-dark-950 rounded-xl border border-dark-800 hover:border-gold-500/50 transition-all group">
+                            <div>
+                                <h3 class="font-bold text-white text-lg">Mr. Sokha</h3>
+                                <p class="text-xs text-neutral-500 mt-1 flex items-center gap-1">
+                                    <i data-lucide="calendar" width="12"></i> 2025-10-24
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-xl font-bold text-red-500">$150.00</span>
+                                <button class="mt-2 text-xs bg-dark-800 border border-dark-700 px-3 py-1.5 rounded-lg text-neutral-300 font-medium hover:bg-gold-500 hover:text-black hover:border-gold-500 transition-colors">
+                                    Settle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-settings" class="view-section hidden fade-in">
+                 <div class="bg-dark-900 rounded-xl border border-dark-800 p-12 text-center">
+                    <i data-lucide="settings" width="64" class="mx-auto text-dark-800 mb-4"></i>
+                    <h3 class="text-xl font-bold text-white">Configuration</h3>
+                    <p class="text-neutral-500 mt-2">System settings will appear here.</p>
+                 </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // Mobile Sidebar Toggle
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            } else {
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+            }
+        }
+
+        // Tab Switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.remove('bg-gold-500', 'text-black', 'font-bold', 'shadow-lg', 'shadow-gold-500/20');
+                btn.classList.add('text-neutral-400', 'hover:bg-dark-800', 'hover:text-gold-400');
+            });
+            const activeBtn = event.currentTarget;
+            activeBtn.classList.remove('text-neutral-400', 'hover:bg-dark-800', 'hover:text-gold-400');
+            activeBtn.classList.add('bg-gold-500', 'text-black', 'font-bold', 'shadow-lg', 'shadow-gold-500/20');
+
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+            
+            const titles = { 'dashboard': 'Dashboard', 'inventory': 'Inventory', 'pos': 'Point of Sale', 'debt': 'Debtors', 'settings': 'Settings' };
+            document.getElementById('page-title').innerText = titles[tabId];
+            
+            // Close sidebar on mobile when clicked
+            if (window.innerWidth < 1024) toggleSidebar();
+        }
+
+        // Cart Logic
+        let cartTotal = 0;
+        let cartCount = 0;
+
+        function addToCart(name, price) {
+            const container = document.getElementById('cart-items');
+            document.getElementById('empty-cart-msg').style.display = 'none';
+
+            const itemHTML = `
+                <div class="flex justify-between items-center p-3 bg-dark-950 rounded-lg border border-dark-800">
+                    <div>
+                        <h4 class="font-medium text-white text-sm">${name}</h4>
+                        <p class="text-xs text-neutral-500">$${price.toFixed(2)} x 1</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-gold-500">$${price.toFixed(2)}</span>
+                        <button onclick="this.parentElement.parentElement.remove(); updateCart(-${price})" class="text-dark-800 hover:text-red-500 transition-colors">
+                            <i data-lucide="trash-2" width="16"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', itemHTML);
+            lucide.createIcons();
+            updateCart(price);
+        }
+
+        function updateCart(priceChange) {
+            cartTotal += priceChange;
+            if(priceChange > 0) cartCount++; else cartCount--;
+            if(cartTotal < 0) cartTotal = 0;
+            if(cartCount < 0) cartCount = 0;
+
+            document.getElementById('cart-total').innerText = '$' + cartTotal.toFixed(2);
+            document.getElementById('cart-count').innerText = cartCount;
+            
+            if(cartCount === 0) document.getElementById('empty-cart-msg').style.display = 'flex';
+        }
+
+        // Chart.js Setup
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Sales',
+                    data: [4000, 3000, 2000, 2780, 1890, 2390, 3490],
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 4,
+                    barThickness: 20
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#262626' },
+                        ticks: { color: '#737373' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#737373' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
